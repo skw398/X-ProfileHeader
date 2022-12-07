@@ -53,12 +53,10 @@ struct ContentView: View {
                     
                     // Body
                     VStack(alignment: .leading) {
-                        HStack {
+                        HStack(alignment: .bottom) {
                             icon
-                                .frame(width: originalIconSize, height: originalIconSize)
                             Spacer()
                             followButton
-                                .offset(y: overlappingHeaderIconSize)
                         }
                         
                         profile
@@ -179,27 +177,20 @@ struct ContentView: View {
     
     private var icon: some View {
         let lineWidth: CGFloat = 5
-        let shrinkScale: CGFloat = 0.7
-        let iconSize: CGFloat = originalIconSize
+        let scale: CGFloat = 1
         - normalize(
             scrollAmount,
             from: shrinkHeaderHeight,
-            to: originalIconSize * (1 - shrinkScale)
+            to: overlappingHeaderIconScale
         )
-        
+                
         return Image("Icon")
             .resizable()
             .aspectRatio(contentMode: .fill)
             .clipShape(Circle())
             .overlay(Circle().stroke(Color("Background"), lineWidth: lineWidth))
-            .frame(width: iconSize, height: iconSize)
-            .offset(
-                y: normalize(
-                    scrollAmount,
-                    from: shrinkHeaderHeight,
-                    to: originalIconSize * shrinkScale * overlappingHeaderIconScale
-                )
-            )
+            .scaleEffect(scale, anchor: UnitPoint(x: 0.5, y: 1))
+            .frame(width: originalIconSize, height: originalIconSize)
     }
     
     private var followButton: some View {
