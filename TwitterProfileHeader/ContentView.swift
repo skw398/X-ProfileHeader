@@ -20,6 +20,9 @@ struct ContentView: View {
     private let overlappingHeaderIconScale: CGFloat = 0.3
     private var overlappingHeaderIconSize: CGFloat { originalIconSize * overlappingHeaderIconScale }
     
+    private let scrollAmountForProcessCompletionWhenScrolled: CGFloat = 30
+    private let scrollAmountForProcessCompletionWhenPulled: CGFloat = 200
+    
     var body: some View {
         ZStack(alignment: .top) {
             headerContent
@@ -90,8 +93,18 @@ struct ContentView: View {
     }
     
     private var headerContent: some View {
-        let scrollAmountForProcessCompletion: CGFloat = 30
-        let appearancePixelOffsetY: CGFloat = 30
+        let yOffset: CGFloat = {
+            scrollAmountForProcessCompletionWhenScrolled
+            - truncate(-nameToHeaderDistance, maxValue: scrollAmountForProcessCompletionWhenScrolled)
+        }()
+        
+        let opacity: CGFloat = {
+            normalize(
+                -nameToHeaderDistance,
+                 from: scrollAmountForProcessCompletionWhenScrolled,
+                 to: 1
+            )
+        }()
         
         return VStack(alignment: .leading) {
             Spacer()
@@ -119,21 +132,8 @@ struct ContentView: View {
                         .foregroundColor(.white)
                 }
                 .padding(.bottom, 5)
-                .offset(
-                    y: scrollAmountForProcessCompletion
-                    - normalize(
-                        -nameToHeaderDistance,
-                         from: scrollAmountForProcessCompletion,
-                         to: appearancePixelOffsetY
-                    )
-                )
-                .opacity(
-                    normalize(
-                        -nameToHeaderDistance,
-                         from: scrollAmountForProcessCompletion,
-                         to: 1
-                    )
-                )
+                .offset(y: yOffset)
+                .opacity(opacity)
                 
                 Spacer()
             }
@@ -142,38 +142,37 @@ struct ContentView: View {
     }
     
     private var headerImage: some View {
-        let scrollAmountForProcessCompletionWhenScrolled: CGFloat = 30
-        let scrollAmountForProcessCompletionWhenPulled: CGFloat = 200
-        
         let maxBlurRadiusWhenScrolled: CGFloat = 10
         let maxBlurRadiusWhenPulled: CGFloat = 30
+        
+        let blurRadiusWhenScrolled: CGFloat = {
+            normalize(
+                -nameToHeaderDistance,
+                 from: scrollAmountForProcessCompletionWhenScrolled,
+                 to: maxBlurRadiusWhenScrolled
+            )
+        }()
+        let blurRadiusWhenPulled: CGFloat = {
+            normalize(
+                abs(scrollAmount),
+                from: scrollAmountForProcessCompletionWhenPulled,
+                to: maxBlurRadiusWhenPulled
+            )
+        }()
+        
+        let blackTransparentBackgroundOpacity: CGFloat = {
+            normalize(
+                -nameToHeaderDistance,
+                 from: scrollAmountForProcessCompletionWhenScrolled,
+                 to: 0.5
+            )
+        }()
         
         return Image("冨嶽三十六景神奈川沖浪裏")
             .resizable()
             .aspectRatio(contentMode: .fill)
-            .overlay (
-                Color.black
-                    .opacity(
-                        normalize(
-                            -nameToHeaderDistance,
-                             from: scrollAmountForProcessCompletionWhenScrolled,
-                             to: 0.5
-                        )
-                    )
-            )
-            .blur(
-                radius: scrollAmount > 0
-                ? normalize(
-                    -nameToHeaderDistance,
-                     from: scrollAmountForProcessCompletionWhenScrolled,
-                     to: maxBlurRadiusWhenScrolled
-                )
-                : normalize(
-                    abs(scrollAmount),
-                    from: scrollAmountForProcessCompletionWhenPulled,
-                    to: maxBlurRadiusWhenPulled
-                )
-            )
+            .overlay(Color.black.opacity(blackTransparentBackgroundOpacity))
+            .blur(radius: scrollAmount > 0 ? blurRadiusWhenScrolled : blurRadiusWhenPulled)
     }
     
     private var icon: some View {
@@ -231,13 +230,13 @@ struct ContentView: View {
         }
     }
     
-    private func normalize(
-        _ value: CGFloat,
-        from originMaxValue: CGFloat,
-        to newMaxValue: CGFloat
-    ) -> CGFloat {
-        let normalized = value * newMaxValue / originMaxValue
-        return max(0, min(newMaxValue, normalized))
+    private func truncate(_ value: CGFloat, maxValue: CGFloat) -> CGFloat {
+        return max(0, min(maxValue, value))
+    }
+    
+    private func normalize(_ value: CGFloat, from originMax: CGFloat, to newMax: CGFloat) -> CGFloat {
+        let normalized = value * newMax / originMax
+        return truncate(normalized, maxValue: newMax)
     }
 }
 
