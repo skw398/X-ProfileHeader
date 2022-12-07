@@ -12,7 +12,8 @@ struct ContentView: View {
     @State private var nameToHeaderDistance: CGFloat = .zero
     
     private let originHeaderHeight: CGFloat = 150
-    private let shrinkHeaderHeight: CGFloat = 50
+    private let shrinkHeaderScale: CGFloat = 0.3
+    private var shrinkHeaderHeight: CGFloat { originHeaderHeight * shrinkHeaderScale }
     private var minHeaderHeight: CGFloat { originHeaderHeight - shrinkHeaderHeight }
     
     private let originalIconSize: CGFloat = 75
