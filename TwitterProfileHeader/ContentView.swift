@@ -95,15 +95,14 @@ struct ContentView: View {
     private var headerContent: some View {
         let yOffset: CGFloat = {
             scrollAmountForProcessCompletionWhenScrolled
-            - truncate(-nameToHeaderDistance, maxValue: scrollAmountForProcessCompletionWhenScrolled)
+            - (-nameToHeaderDistance)
+                .clamp(to: 0...scrollAmountForProcessCompletionWhenScrolled)
         }()
         
         let opacity: CGFloat = {
-            normalize(
-                -nameToHeaderDistance,
-                 from: scrollAmountForProcessCompletionWhenScrolled,
-                 to: 1
-            )
+            (-nameToHeaderDistance)
+                .normalize(from: 0...scrollAmountForProcessCompletionWhenScrolled,
+                           to: 0...1)
         }()
         
         return VStack(alignment: .leading) {
@@ -146,26 +145,20 @@ struct ContentView: View {
         let maxBlurRadiusWhenPulled: CGFloat = 30
         
         let blurRadiusWhenScrolled: CGFloat = {
-            normalize(
-                -nameToHeaderDistance,
-                 from: scrollAmountForProcessCompletionWhenScrolled,
-                 to: maxBlurRadiusWhenScrolled
-            )
+            (-nameToHeaderDistance)
+                .normalize(from: 0...scrollAmountForProcessCompletionWhenScrolled,
+                           to: 0...maxBlurRadiusWhenScrolled)
         }()
         let blurRadiusWhenPulled: CGFloat = {
-            normalize(
-                abs(scrollAmount),
-                from: scrollAmountForProcessCompletionWhenPulled,
-                to: maxBlurRadiusWhenPulled
-            )
+            abs(scrollAmount)
+                .normalize(from: 0...scrollAmountForProcessCompletionWhenPulled,
+                           to: 0...maxBlurRadiusWhenPulled)
         }()
         
         let blackTransparentBackgroundOpacity: CGFloat = {
-            normalize(
-                -nameToHeaderDistance,
-                 from: scrollAmountForProcessCompletionWhenScrolled,
-                 to: 0.5
-            )
+            (-nameToHeaderDistance)
+                .normalize(from: 0...scrollAmountForProcessCompletionWhenScrolled,
+                           to: 0...0.5)
         }()
         
         return Image("冨嶽三十六景神奈川沖浪裏")
@@ -178,12 +171,10 @@ struct ContentView: View {
     private var icon: some View {
         let lineWidth: CGFloat = 5
         let scale: CGFloat = 1
-        - normalize(
-            scrollAmount,
-            from: shrinkHeaderHeight,
-            to: overlappingHeaderIconScale
-        )
-                
+        - scrollAmount
+            .normalize(from: 0...shrinkHeaderHeight,
+                       to: 0...overlappingHeaderIconScale)
+        
         return Image("Icon")
             .resizable()
             .aspectRatio(contentMode: .fill)
@@ -229,15 +220,6 @@ struct ContentView: View {
                 .font(.body)
         }
     }
-    
-    private func truncate(_ value: CGFloat, maxValue: CGFloat) -> CGFloat {
-        return max(0, min(maxValue, value))
-    }
-    
-    private func normalize(_ value: CGFloat, from originMax: CGFloat, to newMax: CGFloat) -> CGFloat {
-        let normalized = value * newMax / originMax
-        return truncate(normalized, maxValue: newMax)
-    }
 }
 
 struct ScrollAmountPreferenceKey: PreferenceKey {
@@ -251,6 +233,23 @@ struct NameToHeaderSizePreferenceKey: PreferenceKey {
     static var defaultValue = CGFloat.zero
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value += nextValue()
+    }
+}
+
+private extension Comparable where Self == CGFloat {
+    func clamp(to range: ClosedRange<Self>) -> Self {
+        return max(range.lowerBound, min(range.upperBound, self))
+    }
+    
+    func normalize(
+        from originRange: ClosedRange<Self>,
+        to newRange: ClosedRange<Self>
+    ) -> Self {
+        let normalized = (newRange.upperBound - newRange.lowerBound)
+        * ((self - originRange.lowerBound) / (originRange.upperBound - originRange.lowerBound))
+        + newRange.lowerBound
+        
+        return normalized.clamp(to: newRange)
     }
 }
 
